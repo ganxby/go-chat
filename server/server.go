@@ -64,7 +64,7 @@ func hahdleClientConn(conn net.Conn) {
 			break
 		}
 
-		broadcast <- fmt.Sprintf("%s: %s", name, strings.TrimSpace(message))
+		broadcast <- fmt.Sprintf("\033[32m%s\033[0m: %s", name, strings.TrimSpace(message))
 	}
 }
 
@@ -74,15 +74,6 @@ func handleBroadcast() {
 		mutex.Lock()
 
 		for conn := range clients {
-			// messageAuthor := strings.Split(message, ":")[0]
-
-			// if clients[conn] != messageAuthor {
-			// 	_, err := conn.Write([]byte(message + "\n"))
-			// 	if err != nil {
-			// 		fmt.Printf("[E] Message send error: %v", err)
-			// 	}
-			// }
-
 			_, err := conn.Write([]byte(message + "\n"))
 			if err != nil {
 				fmt.Printf("\n[E] Message send error: %v", err)
