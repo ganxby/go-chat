@@ -3,14 +3,17 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"net"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
 	clients   = make(map[net.Conn]string)
 	broadcast = make(chan string)
+	colors    = []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[97m"}
 	mutex     sync.Mutex
 )
 
@@ -39,6 +42,10 @@ func main() {
 func hahdleClientConn(conn net.Conn) {
 	defer conn.Close()
 
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+	randomNumber := r.Intn(9)
+
 	conn.Write([]byte("[S] Enter your nickname: \n"))
 	name, err := bufio.NewReader(conn).ReadString('\n')
 	if err != nil {
@@ -64,7 +71,7 @@ func hahdleClientConn(conn net.Conn) {
 			break
 		}
 
-		broadcast <- fmt.Sprintf("\033[32m%s\033[0m: %s", name, strings.TrimSpace(message))
+		broadcast <- fmt.Sprintf("%s%s\033[0m: %s", colors[randomNumber], name, strings.TrimSpace(message))
 	}
 }
 

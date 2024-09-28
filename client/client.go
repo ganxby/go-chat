@@ -7,12 +7,10 @@ import (
 	"net"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/eiannone/keyboard"
 )
-
-// TODO: обработка пустого ввода
-// TODO: попробовать сделать input в main и работать с ним через указатели
 
 func main() {
 	var input strings.Builder
@@ -41,6 +39,27 @@ func main() {
 	}
 }
 
+func isCharInRange(r rune) bool {
+	if unicode.Is(unicode.Latin, r) {
+		return true
+	}
+
+	if unicode.Is(unicode.Cyrillic, r) {
+		return true
+	}
+
+	if unicode.IsDigit(r) {
+		return true
+	}
+
+	switch r {
+	case ',', '*', '!', ')', '(', '#', '@', '$', '%', '&', '<', '>', '"', '\'', '\\', '|', '/', ':', ';', '^', '?', '-', '_', '=', '+', '.':
+		return true
+	}
+
+	return false
+}
+
 func keyboardHandler(input *strings.Builder) {
 	for {
 		char, key, err := keyboard.GetKey()
@@ -64,14 +83,28 @@ func keyboardHandler(input *strings.Builder) {
 			continue
 		}
 
+		if key == 32 {
+			input.WriteRune(32)
+			fmt.Print(" ")
+			continue
+		}
+
 		if key == keyboard.KeyEnter {
+			tmp := strings.ReplaceAll(input.String(), " ", "")
+
+			if len(tmp) == 0 {
+				continue
+			}
+
 			if input.Len() > 0 {
 				break
 			}
 		}
 
-		fmt.Print(string(char))
-		input.WriteRune(char)
+		if isCharInRange(char) {
+			fmt.Print(string(char))
+			input.WriteRune(char)
+		}
 	}
 }
 
