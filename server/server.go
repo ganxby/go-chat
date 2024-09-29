@@ -2,6 +2,9 @@ package main
 
 import (
 	"bufio"
+	config "chat"
+	data "chat"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net"
@@ -12,13 +15,14 @@ import (
 
 var (
 	clients   = make(map[net.Conn]string)
-	broadcast = make(chan string)
+	broadcast = make(chan []byte)
 	colors    = []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[97m"}
 	mutex     sync.Mutex
 )
 
 func main() {
-	listener, err := net.Listen("tcp", ":8080")
+	port := fmt.Sprintf(":%s", config.ServerPort)
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		panic(err)
 	}
@@ -44,9 +48,18 @@ func hahdleClientConn(conn net.Conn) {
 
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
-	randomNumber := r.Intn(9)
+	randomNumber := r.Intn(8)
 
-	conn.Write([]byte("[S] Enter your nickname: \n"))
+	firstMessage := data.ServiceMessage{
+		Username:    "",
+		Message:     "[S] Enter your nickname: ",
+		Color:       "",
+		MessageType: "InputUsername",
+	}
+
+	jm, _ := json.Marshal(firstMessage)
+	conn.Write(append(jm, '\n'))
+
 	name, err := bufio.NewReader(conn).ReadString('\n')
 	if err != nil {
 		fmt.Printf("\n[E] Reading client nickname error: %v", err)
@@ -59,19 +72,53 @@ func hahdleClientConn(conn net.Conn) {
 	clients[conn] = name
 	mutex.Unlock()
 
-	broadcast <- fmt.Sprintf("[+] User %s connected", name)
+	newUserMessage := data.ServiceMessage{
+		Username:    name,
+		Message:     "",
+		Color:       colors[randomNumber],
+		MessageType: "NewUser",
+	}
+
+	jm, _ = json.Marshal(newUserMessage)
+
+	connectionInfo := fmt.Sprintf("[+] User %s connected", name)
+	fmt.Println(connectionInfo)
+
+	broadcast <- append(jm, '\n')
 
 	for {
-		message, err := bufio.NewReader(conn).ReadString('\n')
+		rawMessage, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
 			mutex.Lock()
 			delete(clients, conn)
 			mutex.Unlock()
-			broadcast <- fmt.Sprintf("[-] User %s disconnected", name)
+
+			connectionInfo := fmt.Sprintf("[-] User %s disconnected", name)
+			fmt.Println(connectionInfo)
+
+			message := data.ServiceMessage{
+				Username:    name,
+				Message:     "",
+				Color:       colors[randomNumber],
+				MessageType: "UserDisconnected",
+			}
+
+			jm, _ := json.Marshal(message)
+
+			broadcast <- append(jm, '\n')
 			break
 		}
 
-		broadcast <- fmt.Sprintf("%s%s\033[0m: %s", colors[randomNumber], name, strings.TrimSpace(message))
+		message := data.ServiceMessage{
+			Username:    name,
+			Message:     rawMessage,
+			Color:       colors[randomNumber],
+			MessageType: "NewMessage",
+		}
+
+		jm, _ := json.Marshal(message)
+
+		broadcast <- append([]byte(jm), '\n')
 	}
 }
 
@@ -81,7 +128,7 @@ func handleBroadcast() {
 		mutex.Lock()
 
 		for conn := range clients {
-			_, err := conn.Write([]byte(message + "\n"))
+			_, err := conn.Write(message)
 			if err != nil {
 				fmt.Printf("\n[E] Message send error: %v", err)
 			}
