@@ -13,10 +13,15 @@ import (
 	"time"
 )
 
+// TODO: ограничить максимальное количество пользователей
+// TODO: ограничить максимальную длину сообщения
+// TODO: добавить время сообщений
+// TODO: сделать нормальное логгирование на сервере
+
 var (
 	clients   = make(map[net.Conn]string)
 	broadcast = make(chan []byte)
-	colors    = []string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[97m"}
+	colors    = [8]string{"\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m", "\033[37m", "\033[97m"}
 	mutex     sync.Mutex
 )
 
@@ -49,6 +54,7 @@ func hahdleClientConn(conn net.Conn) {
 	source := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(source)
 	randomNumber := r.Intn(8)
+	userColor := colors[randomNumber]
 
 	firstMessage := data.ServiceMessage{
 		Username:    "",
@@ -72,14 +78,18 @@ func hahdleClientConn(conn net.Conn) {
 	clients[conn] = name
 	mutex.Unlock()
 
-	newUserMessage := data.ServiceMessage{
+	message := data.ServiceMessage{
 		Username:    name,
 		Message:     "",
-		Color:       colors[randomNumber],
+		Color:       userColor,
 		MessageType: "NewUser",
 	}
 
-	jm, _ = json.Marshal(newUserMessage)
+	jm, err = message.CreateMessage()
+	if err != nil {
+		fmt.Printf("\n[E] Marshalling error: %v", err)
+		return
+	}
 
 	connectionInfo := fmt.Sprintf("[+] User %s connected", name)
 	fmt.Println(connectionInfo)
@@ -99,11 +109,15 @@ func hahdleClientConn(conn net.Conn) {
 			message := data.ServiceMessage{
 				Username:    name,
 				Message:     "",
-				Color:       colors[randomNumber],
+				Color:       userColor,
 				MessageType: "UserDisconnected",
 			}
 
-			jm, _ := json.Marshal(message)
+			jm, err = message.CreateMessage()
+			if err != nil {
+				fmt.Printf("\n[E] Marshalling error: %v", err)
+				return
+			}
 
 			broadcast <- append(jm, '\n')
 			break
@@ -112,11 +126,15 @@ func hahdleClientConn(conn net.Conn) {
 		message := data.ServiceMessage{
 			Username:    name,
 			Message:     rawMessage,
-			Color:       colors[randomNumber],
+			Color:       userColor,
 			MessageType: "NewMessage",
 		}
 
-		jm, _ := json.Marshal(message)
+		jm, err = message.CreateMessage()
+		if err != nil {
+			fmt.Printf("\n[E] Marshalling error: %v", err)
+			return
+		}
 
 		broadcast <- append([]byte(jm), '\n')
 	}

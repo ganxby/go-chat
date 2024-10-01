@@ -15,6 +15,7 @@ import (
 )
 
 // TODO: ограничение на запуск одного клиента на устройстве
+// TODO: сделать возможность получения инфо о чате (например, через команду "?o" выводить инфо об онлайне)
 
 func main() {
 	var input strings.Builder
@@ -116,6 +117,7 @@ func keyboardHandler(input *strings.Builder) {
 }
 
 func messagesHandler(conn net.Conn, input *strings.Builder) {
+	var message string
 	messagesCounter := 0
 
 	for {
@@ -129,7 +131,7 @@ func messagesHandler(conn net.Conn, input *strings.Builder) {
 		var jm config.ServiceMessage
 		err = json.Unmarshal([]byte(rawMessage), &jm)
 		if err != nil {
-			fmt.Printf("[E] JSON decoding error: %v\n", err)
+			fmt.Printf("[E] Unmarshalling error: %v\n", err)
 			continue
 		}
 
@@ -138,8 +140,6 @@ func messagesHandler(conn net.Conn, input *strings.Builder) {
 			fmt.Print("\033[2K")
 			fmt.Print("\033[0G")
 		}
-
-		var message string
 
 		if jm.MessageType == "InputUsername" {
 			message = jm.Message
@@ -151,7 +151,7 @@ func messagesHandler(conn net.Conn, input *strings.Builder) {
 			message = fmt.Sprintf("%s%s\033[0m: %s", jm.Color, jm.Username, jm.Message)
 		}
 
-		// Если сообщение второе (), то добавить перенос строки
+		// Если сообщение второе, то добавить перенос строки
 		if messagesCounter == 1 {
 			fmt.Print("\n" + message)
 		} else {
