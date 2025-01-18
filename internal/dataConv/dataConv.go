@@ -1,4 +1,4 @@
-package chat
+package dataconv
 
 import (
 	"encoding/json"

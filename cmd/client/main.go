@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	config "chat"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,6 +9,9 @@ import (
 	"os"
 	"strings"
 	"unicode"
+
+	c "chat/internal/config"
+	dc "chat/internal/dataConv"
 
 	"github.com/eiannone/keyboard"
 )
@@ -26,7 +28,7 @@ func main() {
 	}
 	defer keyboard.Close()
 
-	connectString := fmt.Sprintf("%s:%s", config.ServerHost, config.ServerPort)
+	connectString := fmt.Sprintf("%s:%s", c.ServerHost, c.ServerPort)
 
 	conn, err := net.Dial("tcp", connectString)
 	if err != nil {
@@ -34,7 +36,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	serverName := fmt.Sprintf("%s:%s", config.ServerHost, config.ServerPort)
+	serverName := fmt.Sprintf("%s:%s", c.ServerHost, c.ServerPort)
 	fmt.Printf("[!] Connected to server %s\n", serverName)
 
 	go messagesHandler(conn, &input)
@@ -128,7 +130,7 @@ func messagesHandler(conn net.Conn, input *strings.Builder) {
 			os.Exit(0)
 		}
 
-		var jm config.ServiceMessage
+		var jm dc.ServiceMessage
 		err = json.Unmarshal([]byte(rawMessage), &jm)
 		if err != nil {
 			fmt.Printf("[E] Unmarshalling error: %v\n", err)

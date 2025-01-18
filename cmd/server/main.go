@@ -2,8 +2,6 @@ package main
 
 import (
 	"bufio"
-	config "chat"
-	data "chat"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -11,6 +9,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	c "chat/internal/config"
+	dc "chat/internal/dataConv"
 )
 
 // TODO: ограничить максимальное количество пользователей
@@ -26,7 +27,7 @@ var (
 )
 
 func main() {
-	port := fmt.Sprintf(":%s", config.ServerPort)
+	port := fmt.Sprintf(":%s", c.ServerPort)
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		panic(err)
@@ -56,7 +57,7 @@ func hahdleClientConn(conn net.Conn) {
 	randomNumber := r.Intn(8)
 	userColor := colors[randomNumber]
 
-	firstMessage := data.ServiceMessage{
+	firstMessage := dc.ServiceMessage{
 		Username:    "",
 		Message:     "[S] Enter your nickname: ",
 		Color:       "",
@@ -78,7 +79,7 @@ func hahdleClientConn(conn net.Conn) {
 	clients[conn] = name
 	mutex.Unlock()
 
-	message := data.ServiceMessage{
+	message := dc.ServiceMessage{
 		Username:    name,
 		Message:     "",
 		Color:       userColor,
@@ -106,7 +107,7 @@ func hahdleClientConn(conn net.Conn) {
 			connectionInfo := fmt.Sprintf("[-] User %s disconnected", name)
 			fmt.Println(connectionInfo)
 
-			message := data.ServiceMessage{
+			message := dc.ServiceMessage{
 				Username:    name,
 				Message:     "",
 				Color:       userColor,
@@ -123,7 +124,7 @@ func hahdleClientConn(conn net.Conn) {
 			break
 		}
 
-		message := data.ServiceMessage{
+		message := dc.ServiceMessage{
 			Username:    name,
 			Message:     rawMessage,
 			Color:       userColor,
