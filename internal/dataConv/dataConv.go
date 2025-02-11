@@ -17,5 +17,7 @@ func (s ServiceMessage) CreateMessage() ([]byte, error) {
 		return nil, err
 	}
 
-	return jm, nil
+	return append(jm, '\n'), nil
 }
+
+// TODO: add extractMessage
