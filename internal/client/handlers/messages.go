@@ -7,13 +7,14 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 
 	dc "chat/internal/dataConv"
 
 	"github.com/eiannone/keyboard"
 )
 
-func MessagesHandler(conn net.Conn, input *strings.Builder) {
+func MessagesHandler(conn net.Conn, input *strings.Builder, mx *sync.Mutex) {
 	var message string
 	messagesCounter := 0
 
@@ -61,7 +62,9 @@ func MessagesHandler(conn net.Conn, input *strings.Builder) {
 		messagesCounter += 1
 
 		if messagesCounter > 1 {
+			mx.Lock()
 			fmt.Print("--> " + input.String())
+			mx.Unlock()
 		}
 	}
 }

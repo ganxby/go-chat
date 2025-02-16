@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
 	h "chat/internal/client/handlers"
 	c "chat/internal/config"
@@ -14,9 +15,9 @@ import (
 // TODO: ограничение на запуск одного клиента на устройстве
 // TODO: сделать возможность получения инфо о чате (например, через команду "?o" выводить инфо об онлайне)
 // TODO: БАГ - при нажатии ALT+ЛЮБАЯ_КЛАВИША чат закрывается
-// TODO: убрать состояние гонки у 'input'
 
 func main() {
+	var mx sync.Mutex
 	var input strings.Builder
 
 	connectString := fmt.Sprintf("%s:%s", c.ServerHost, c.ServerPort)
@@ -35,18 +36,20 @@ func main() {
 		panic(err)
 	}
 
-	go h.MessagesHandler(conn, &input)
+	go h.MessagesHandler(conn, &input, &mx)
 
 	for {
-		isExit := h.KeyboardHandler(&input)
+		isExit := h.KeyboardHandler(&input, &mx)
 
 		if isExit {
 			// TODO: возможно? добавить disconnect message
 			break
 		}
 
+		mx.Lock()
 		conn.Write([]byte(input.String() + "\n"))
 		input.Reset()
+		mx.Unlock()
 	}
 
 	keyboard.Close()
