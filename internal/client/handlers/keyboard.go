@@ -45,7 +45,7 @@ func KeyboardHandler(input *strings.Builder, mx *sync.Mutex) bool {
 		if key == 32 {
 			mx.Lock()
 			input.WriteRune(32)
-			mx.Lock()
+			mx.Unlock()
 
 			fmt.Print(" ")
 			continue
