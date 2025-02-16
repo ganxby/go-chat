@@ -1,4 +1,4 @@
-package chat
+package config
 
 const (
 	ServerHost = "localhost"
